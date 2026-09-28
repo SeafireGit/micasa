@@ -668,8 +668,8 @@ func entityCellStyle(value string) lipgloss.Style {
 }
 
 // urgencyStyle returns a style colored from green (far out) through yellow
-// (upcoming) to red (overdue) based on the number of days until a date.
-// Thresholds: >60 days = green, 30-60 = yellow, 0-30 = orange, <0 = red.
+// to red (overdue) based on the number of days until a date.
+// Thresholds: <7 days = orange, 7-15 days = yellow, >=15 days = green, <0 = red.
 func urgencyStyle(dateStr string) lipgloss.Style {
 	return urgencyStyleAt(dateStr, time.Now())
 }
@@ -686,9 +686,9 @@ func urgencyStyleAt(dateStr string, now time.Time) lipgloss.Style {
 	switch {
 	case days < 0:
 		return urgencyOverdue
-	case days <= 30:
+	case days < 7:
 		return urgencySoon
-	case days <= 60:
+	case days < 15:
 		return urgencyUpcoming
 	default:
 		return urgencyFar

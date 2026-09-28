@@ -60,3 +60,67 @@ func TestUrgencyStyleDateOnlyComparison(t *testing.T) {
 	assert.Equal(t, urgencySoon, style,
 		"item due tomorrow (locally) should be 'soon', not overdue")
 }
+
+func TestUrgencyStyleThresholds_Overdue(t *testing.T) {
+	t.Parallel()
+	// Items due in the past (< 0 days) should be overdue (red bold).
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+
+	style := urgencyStyleAt("2026-06-14", now) // -1 day
+	assert.Equal(t, urgencyOverdue, style,
+		"overdue item (-1 day) should use urgencyOverdue style")
+
+	style = urgencyStyleAt("2026-06-01", now)   // -45 days
+	assert.Equal(t, urgencyOverdue, style,
+		"long overdue item (-45 days) should still be overdue")
+}
+
+func TestUrgencyStyleThresholds_Urgent(t *testing.T) {
+	t.Parallel()
+	// Items due in < 7 days (0-6 days) should be urgent (orange).
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+
+	style := urgencyStyleAt("2026-06-15", now) // 0 days - today
+	assert.Equal(t, urgencySoon, style,
+		"item due today (0 days) should be urgent")
+
+	style = urgencyStyleAt("2026-06-16", now) // +1 day
+	assert.Equal(t, urgencySoon, style,
+		"item due in 1 day should be urgent")
+
+	style = urgencyStyleAt("2026-06-21", now) // +6 days (last day of urgent range)
+	assert.Equal(t, urgencySoon, style,
+		"item due in 6 days (< 7) should be urgent")
+}
+
+func TestUrgencyStyleThresholds_Upcoming(t *testing.T) {
+	t.Parallel()
+	// Items due in 7-15 days (7-14 days inclusive) should be upcoming (yellow).
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+
+	style := urgencyStyleAt("2026-06-22", now) // +7 days
+	assert.Equal(t, urgencyUpcoming, style,
+		"item due in 7 days should be upcoming")
+
+	style = urgencyStyleAt("2026-06-29", now) // +14 days (last day of upcoming range)
+	assert.Equal(t, urgencyUpcoming, style,
+		"item due in 14 days (< 15) should be upcoming")
+}
+
+func TestUrgencyStyleThresholds_Far(t *testing.T) {
+	t.Parallel()
+	// Items due >= 15 days should be far (green).
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+
+	style := urgencyStyleAt("2026-06-30", now) // +15 days
+	assert.Equal(t, urgencyFar, style,
+		"item due in 15 days (>= 15) should be far")
+
+	style = urgencyStyleAt("2026-07-15", now) // +30 days
+	assert.Equal(t, urgencyFar, style,
+		"item due in 30 days should be far")
+
+	style = urgencyStyleAt("2026-12-31", now) // +541 days
+	assert.Equal(t, urgencyFar, style,
+		"item due far in the future should be far")
+}
